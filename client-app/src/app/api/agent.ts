@@ -1,69 +1,87 @@
-import axios, { AxiosResponse } from "axios";
-import { IActivity } from "../models/activity";
-import { history } from '../..';
-import { toast } from "react-toastify";
-import { IUser, IUserFormValues } from "../models/user";
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { Activity } from '../models/activity';
+import { User, UserFormValues } from '../models/user';
+import { router } from '../router/Routes';
+import { ServerError } from '../models/serverError';
+import { Comment } from '../stores/commentStore';
+import { store } from '../stores/store';
 
-axios.defaults.baseURL = "http://localhost:5000/api";
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-axios.interceptors.request.use((config) => {
-  const token = window.localStorage.getItem('jwt');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-}, error => {
-  return Promise.reject(error);
-})
-
-axios.interceptors.response.use(undefined, error => {
-  if (error.message === 'Network Error' && !error.response) {
-    toast.error('Network error - make sure API is running')
-  }
-    const {status, data, config} = error.response;
-  if (status === 404) {
-    history.push('/notfound');
-  }
-  if (status === 400 && config.method === 'get' && data.errors.hasOwnProperty('id')) {
-    history.push('/notfound');
-  }
-  if (status === 500) {
-    toast.error('Server error - check the terminal for more info!')
-  }
-  throw error.response;
+axios.interceptors.request.use(config => {
+    const token = store.userStore.token;
+    if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    return config;
 });
 
-const responseBody = (response: AxiosResponse) => response.data;
+axios.interceptors.response.use(async response => {
+    return response;
+}, (error: AxiosError) => {
+    const { data, status, config } = error.response as AxiosResponse;
+    switch (status) {
+        case 400:
+            if (config.method === 'get' && data.errors.hasOwnProperty('id')) {
+                router.navigate('/not-found');
+            }
+            if (data.errors) {
+                const modalStateErrors = [];
+                for (const key in data.errors) {
+                    if (data.errors[key]) {
+                        modalStateErrors.push(data.errors[key]);
+                    }
+                }
+                throw modalStateErrors.flat();
+            } else {
+                throw data;
+            }
+        case 401:
+            throw 'Unauthorized';
+        case 403:
+            throw 'Forbidden';
+        case 404:
+            router.navigate('/not-found');
+            break;
+        case 500:
+            store.modalStore.setError(data);
+            throw data;
+    }
+    return Promise.reject(error);
+});
 
-const sleep = (ms: number) => (response: AxiosResponse) =>
-  new Promise<AxiosResponse>((resolve) =>
-    setTimeout(() => resolve(response), ms)
-  );
+const responseBody = <T>(response: AxiosResponse<T>) => response.data;
 
 const requests = {
-  get: (url: string) => axios.get(url).then(sleep(1000)).then(responseBody),
-  post: (url: string, body: {}) =>
-    axios.post(url, body).then(sleep(1000)).then(responseBody),
-  put: (url: string, body: {}) =>
-    axios.put(url, body).then(sleep(1000)).then(responseBody),
-  delete: (url: string) =>
-    axios.delete(url).then(sleep(1000)).then(responseBody),
+    get: <T>(url: string) => axios.get<T>(url).then(responseBody),
+    post: <T>(url: string, body: {}) => axios.post<T>(url, body).then(responseBody),
+    put: <T>(url: string, body: {}) => axios.put<T>(url, body).then(responseBody),
+    del: <T>(url: string) => axios.delete<T>(url).then(responseBody)
 };
 
 const Activities = {
-  list: (): Promise<IActivity[]> => requests.get("/activities"),
-  details: (id: string) => requests.get(`/activities/${id}`),
-  create: (activity: IActivity) => requests.post("/activities", activity),
-  update: (activity: IActivity) =>
-    requests.put(`/activities/${activity.id}`, activity),
-  delete: (id: string) => requests.delete(`/activities/${id}`),
+    list: () => requests.get<Activity[]>('/activities'),
+    details: (id: string) => requests.get<Activity>(`/activities/${id}`),
+    create: (activity: Activity) => requests.post<void>('/activities', activity),
+    update: (activity: Activity) => requests.put<void>(`/activities/${activity.id}`, activity),
+    delete: (id: string) => requests.del<void>(`/activities/${id}`),
+    attend: (id: string) => requests.post<void>(`/activities/${id}/attend`, {})
 };
 
-const User = {
-  current: (): Promise<IUser> => requests.get('/user'),
-  login: (user: IUserFormValues): Promise<IUser> => requests.post(`/user/login`, user),
-  register: (user: IUserFormValues): Promise<IUser> => requests.post(`/user/register`, user),
-}
-
-export default {
-  Activities,
-  User
+const Account = {
+    current: () => requests.get<User>('/account'),
+    login: (user: UserFormValues) => requests.post<User>('/account/login', user),
+    register: (user: UserFormValues) => requests.post<User>('/account/register', user)
 };
+
+const Comments = {
+    list: (activityId: string) => requests.get<Comment[]>(`/activities/${activityId}/comments`),
+    create: (activityId: string, comment: Comment) => requests.post<Comment>(`/activities/${activityId}/comments`, comment),
+    delete: (commentId: string) => requests.del(`/comments/${commentId}`)
+};
+
+const agent = {
+    Activities,
+    Account,
+    Comments
+};
+
+export default agent;

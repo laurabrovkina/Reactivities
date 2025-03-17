@@ -1,48 +1,73 @@
-import React, { useContext, useEffect } from "react";
-import { Grid } from "semantic-ui-react";
-import { observer } from "mobx-react-lite";
-import { RouteComponentProps } from "react-router-dom";
-import { LoadingComponent } from "../../../app/layout/LoadingComponent";
-import  ActivityDetailedHeader from "./ActivityDetailedHeader";
-import { ActivityDetailedInfo } from "./ActivityDetailedInfo";
-import { ActivityDetailedChat } from "./ActivityDetailedChat";
-import { ActivityDetailedSidebar } from "./ActivityDetailedSidebar";
-import { RootStoreContext } from "../../../app/stores/rootStore";
+import React, { useEffect } from 'react';
+import { Grid, Segment } from 'semantic-ui-react';
+import { observer } from 'mobx-react-lite';
+import { useNavigate, useParams } from 'react-router-dom';
+import { LoadingComponent } from '../../../app/layout/LoadingComponent';
+import ActivityDetailedHeader from './ActivityDetailedHeader';
+import ActivityDetailedInfo from './ActivityDetailedInfo';
+import ActivityDetailedChat from './ActivityDetailedChat';
+import ActivityDetailedSidebar from './ActivityDetailedSidebar';
+import { useStore } from '../../../app/stores/store';
+import { Activity } from '../../../app/models/activity';
 
-interface DetailParams {
-  id: string;
-}
+const ActivityDetails: React.FC = observer(() => {
+    const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const { activityStore } = useStore();
+    const { 
+        activity, 
+        loadActivity, 
+        isLoading,
+        clearActivity 
+    } = activityStore;
 
-const ActivityDetails: React.FC<RouteComponentProps<DetailParams>> = ({
-  match,
-  history
-}) => {
-  const rootStore = useContext(RootStoreContext);
-  const { activity, loadActivity, loadingInitial } = rootStore.activityStore;
+    useEffect(() => {
+        const fetchActivity = async () => {
+            if (!id) return;
+            try {
+                await loadActivity(id);
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                navigate('/notfound');
+            }
+        };
+        
+        fetchActivity();
+        
+        return () => {
+            clearActivity();
+        };
+    }, [loadActivity, clearActivity, id, navigate]);
 
-  useEffect(() => {
-    loadActivity(match.params.id);
-  }, [loadActivity, match.params.id, history]); //dependencies
+    const renderContent = (activity: Activity) => (
+        <Grid>
+            <Grid.Column width={10}>
+                <ActivityDetailedHeader activity={activity} />
+                <ActivityDetailedInfo activity={activity} />
+                <ActivityDetailedChat activityId={activity.id} />
+            </Grid.Column>
+            <Grid.Column width={6}>
+                <ActivityDetailedSidebar activity={activity} />
+            </Grid.Column>
+        </Grid>
+    );
 
-  if (loadingInitial)
-    return <LoadingComponent content='Loading activity...' />;
+    if (isLoading) {
+        return <LoadingComponent content='Loading activity...' />;
+    }
 
-  if (!activity) {
-    return <h2>Activity not found</h2>
-  }
+    if (!activity) {
+        return (
+            <Segment>
+                <h2>Activity not found</h2>
+                <button onClick={() => navigate('/activities')}>
+                    Back to activities
+                </button>
+            </Segment>
+        );
+    }
 
-  return (
-    <Grid>
-      <Grid.Column width={10}>
-        <ActivityDetailedHeader activity={activity} />
-        <ActivityDetailedInfo activity={activity} />
-        <ActivityDetailedChat />
-      </Grid.Column>
-      <Grid.Column width={6}>
-        <ActivityDetailedSidebar />
-      </Grid.Column>
-    </Grid>
-  );
-};
+    return renderContent(activity);
+});
 
-export default observer(ActivityDetails);
+export default ActivityDetails;

@@ -4,16 +4,17 @@ import ActivityList from "./ActivityList";
 import {observer} from 'mobx-react-lite';
 import { LoadingComponent } from "../../../app/layout/LoadingComponent";
 import { RootStoreContext } from "../../../app/stores/rootStore";
+import ActivityFilters from './ActivityFilters';
 
 const ActivityDashboard: React.FC = () => {
-  const rootStore = useContext(RootStoreContext);
-  const {loadActivities, loadingInitial} = rootStore.activityStore;
+  const { activityStore } = useContext(RootStoreContext);
+  const { loadActivities, isLoading, activitiesByDate } = activityStore;
 
   useEffect(() => {
     loadActivities();
   }, [loadActivities]);
 
-  if (loadingInitial)
+  if (isLoading)
     return <LoadingComponent content="Loading activities..." />;
     
   return (
@@ -22,7 +23,7 @@ const ActivityDashboard: React.FC = () => {
         <ActivityList />
       </Grid.Column>
       <Grid.Column width={6}>
-        <h2>Activity filteres</h2>
+        <ActivityFilters />
       </Grid.Column>
     </Grid>
   );

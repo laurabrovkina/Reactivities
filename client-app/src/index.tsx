@@ -1,26 +1,35 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import { Router } from "react-router-dom";
-import { createBrowserHistory } from 'history';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
 import 'react-widgets/dist/css/react-widgets.css';
-import App from "./app/layout/App";
-import "./app/layout/styles.css";
-import * as serviceWorker from "./serviceWorker";
-import ScrollToTop from "./app/layout/ScrollToTop";
-import dateFnsLocalizer from 'react-widgets-date-fns';
+import App from './app/layout/App';
+import './app/layout/styles.css';
+import * as serviceWorker from './serviceWorker';
+import ScrollToTop from './app/layout/ScrollToTop';
 
-dateFnsLocalizer();
+// Get the root element
+const container = document.getElementById('root');
 
-export const history = createBrowserHistory();
+// Make sure container exists
+if (!container) {
+  throw new Error('Failed to find the root element');
+}
 
-ReactDOM.render(
-    <Router history={history}>
+// Create a root
+const root = createRoot(container);
+
+// Render the app
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
       <ScrollToTop>
+        <ToastContainer position="bottom-right" />
         <App />
       </ScrollToTop>
-    </Router>,
-  document.getElementById("root")
+    </BrowserRouter>
+  </React.StrictMode>
 );
 
 // If you want your app to work offline and load faster, you can change
