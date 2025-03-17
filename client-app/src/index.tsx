@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
-import 'react-widgets/dist/css/react-widgets.css';
+import 'semantic-ui-css/semantic.min.css';
 import App from './app/layout/App';
 import './app/layout/styles.css';
 import * as serviceWorker from './serviceWorker';
