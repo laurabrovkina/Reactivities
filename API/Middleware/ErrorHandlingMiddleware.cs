@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using API.Models;
 using Application.Errors;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace API.Middleware
@@ -12,10 +15,21 @@ namespace API.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ErrorHandlingMiddleware> _logger;
-        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+        private readonly IHostEnvironment _env;
+        private readonly JsonSerializerOptions _jsonOptions;
+
+        public ErrorHandlingMiddleware(
+            RequestDelegate next,
+            ILogger<ErrorHandlingMiddleware> logger,
+            IHostEnvironment env)
         {
-            _logger = logger;
             _next = next;
+            _logger = logger;
+            _env = env;
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
         }
 
         public async Task Invoke(HttpContext context)
@@ -26,38 +40,40 @@ namespace API.Middleware
             }
             catch (Exception ex)
             {
-                await HandleExceptionAsync(context, ex, _logger);
+                await HandleExceptionAsync(context, ex);
             }
         }
 
-        private async Task HandleExceptionAsync(HttpContext context, Exception ex, ILogger<ErrorHandlingMiddleware> logger)
+        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            object errors = null; 
-
-            switch(ex)
-            {
-                case RestException re:
-                    logger.LogError(ex, "REST ERROR");
-                    errors = re.Errors;
-                    context.Response.StatusCode = (int)re.Code;
-                    break;
-                case Exception e:
-                    logger.LogError(e, "SERVER ERROR");
-                    errors = string.IsNullOrEmpty(e.Message) ? "Error" : e.Message;
-                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    break;
-            }
-
+            var error = CreateApiError(exception);
             context.Response.ContentType = "application/json";
-            if (errors != null)
-            {
-                var result = JsonSerializer.Serialize(new 
-                {
-                    errors
-                });
+            context.Response.StatusCode = error.StatusCode;
 
-                await context.Response.WriteAsync(result);
-            }
+            var response = JsonSerializer.Serialize(error, _jsonOptions);
+            await context.Response.WriteAsync(response);
+        }
+
+        private ApiError CreateApiError(Exception exception)
+        {
+            _logger.LogError(exception, exception.Message);
+
+            return exception switch
+            {
+                RestException restException => new ApiError(
+                    restException.Code,
+                    "Rest Error",
+                    _env.IsDevelopment() ? restException.Message : null)
+                {
+                    ValidationErrors = (IDictionary<string, string[]>)restException.Errors
+                },
+
+                // Add more specific exception types here as needed
+                _ => new ApiError(
+                    HttpStatusCode.InternalServerError,
+                    "Server Error",
+                    _env.IsDevelopment() ? exception.Message : null)
+            };
         }
     }
 }

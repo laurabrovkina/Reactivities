@@ -1,10 +1,9 @@
-using API.Middleware;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Logging;
-using System;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using API.Extensions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,20 +16,15 @@ builder.Services
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseErrorHandling();
 
 if (app.Environment.IsDevelopment())
 {
     // Add development-specific middleware here if needed
 }
 
-app.UseRouting();
-app.UseCors("CorsPolicy");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
+// Configure API middleware pipeline
+app.UseApiConfiguration();
 
 // Initialize and seed database
 try
@@ -42,6 +36,7 @@ catch (Exception ex)
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogError(ex, "An error occurred during application startup");
+    throw; // Rethrow to prevent application startup if database initialization fails
 }
 
 await app.RunAsync();
