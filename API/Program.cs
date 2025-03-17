@@ -1,56 +1,18 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Application.Activities;
-using Application.Interfaces;
-using Domain;
-using FluentValidation.AspNetCore;
-using Infrastructure.Security;
-using Microsoft.AspNetCore.Mvc.Authorization;
-using Persistence;
 using API.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
 using System;
 using Microsoft.Extensions.DependencyInjection;
-using MediatR;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Hosting;
 using API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers(opt =>
-{
-    var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-    opt.Filters.Add(new AuthorizeFilter(policy));
-})
-.AddFluentValidation(cfg =>
-{
-    cfg.RegisterValidatorsFromAssemblyContaining<Create>();
-});
-
-// Configure CORS
-builder.Services.AddCors(opt =>
-{
-    opt.AddPolicy("CorsPolicy", policy =>
-    {
-        policy
-            .WithOrigins(new[] { "http://localhost:3000/" })
-            .SetIsOriginAllowed((host) => true)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
-
-// Add application services
-builder.Services.AddApplicationServices(builder.Configuration);
-builder.Services.AddIdentityServices(builder.Configuration);
+builder.Services
+    .AddApiServices()
+    .AddApplicationServices(builder.Configuration)
+    .AddIdentityServices(builder.Configuration);
 
 var app = builder.Build();
 
