@@ -2,7 +2,7 @@ import { observable, computed, action, runInAction } from "mobx";
 import { User, UserFormValues } from "../models/user";
 import agent from "../api/agent";
 import { RootStore } from "./rootStore";
-import { history } from "../..";
+import { router } from "../router/Routes";
 import { BaseStore } from './baseStore';
 import { toast } from 'react-toastify';
 
@@ -46,20 +46,20 @@ export class UserStore extends BaseStore {
 
     @action login = async (values: UserFormValues) => {
         try {
-            const user = await this.executeAction(
+            const user = await this.executeAction<User>(
                 'auth',
-                () => agent.User.login(values),
+                () => agent.Account.login(values),
                 'user login'
             );
             
-            runInAction(() => {
-                if (user) {
+            if (user) {
+                runInAction(() => {
                     this.currentUser = user;
                     this.setToken(user.token);
                     this.rootStore.modalStore.closeModal();
-                    history.push('/activities');
-                }
-            });
+                });
+                router.navigate('/activities');
+            }
         } catch (error) {
             toast.error('Invalid email or password');
             throw error;
@@ -68,20 +68,20 @@ export class UserStore extends BaseStore {
 
     @action register = async (values: UserFormValues) => {
         try {
-            const user = await this.executeAction(
+            const user = await this.executeAction<User>(
                 'auth',
-                () => agent.User.register(values),
+                () => agent.Account.register(values),
                 'user registration'
             );
             
-            runInAction(() => {
-                if (user) {
+            if (user) {
+                runInAction(() => {
                     this.currentUser = user;
                     this.setToken(user.token);
                     this.rootStore.modalStore.closeModal();
-                    history.push('/activities');
-                }
-            });
+                });
+                router.navigate('/activities');
+            }
         } catch (error) {
             toast.error('Problem registering user');
             throw error;
@@ -90,17 +90,17 @@ export class UserStore extends BaseStore {
 
     @action loadUser = async () => {
         try {
-            const user = await this.executeAction(
+            const user = await this.executeAction<User>(
                 'auth',
-                () => agent.User.current(),
+                () => agent.Account.current(),
                 'loading user'
             );
             
-            runInAction(() => {
-                if (user) {
+            if (user) {
+                runInAction(() => {
                     this.currentUser = user;
-                }
-            });
+                });
+            }
         } catch (error) {
             this.logout();
         }
@@ -109,22 +109,25 @@ export class UserStore extends BaseStore {
     @action logout = () => {
         this.currentUser = null;
         this.setToken(null);
-        history.push('/');
+        router.navigate('/');
     };
 
-    @action updateUser = async (user: Partial<User>) => {
+    @action updateUser = async (userUpdate: Partial<User>) => {
         try {
-            const updatedUser = await this.executeAction(
+            const updatedUser = await this.executeAction<User>(
                 'auth',
-                () => agent.User.update(user),
+                () => agent.Account.update(userUpdate),
                 'updating user'
             );
             
-            runInAction(() => {
-                if (updatedUser) {
-                    this.currentUser = { ...this.currentUser, ...updatedUser };
-                }
-            });
+            if (updatedUser && this.currentUser) {
+                runInAction(() => {
+                    this.currentUser = {
+                        ...this.currentUser,
+                        ...updatedUser
+                    };
+                });
+            }
         } catch (error) {
             toast.error('Problem updating user');
             throw error;

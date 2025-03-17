@@ -3,8 +3,8 @@ import { Container, Segment, Header, Button, Image, Grid } from 'semantic-ui-rea
 import { Link } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../../app/stores/store';
-import { LoginForm } from '../user/LoginForm';
-import { RegisterForm } from '../user/RegisterUser';
+import LoginForm from '../user/LoginForm';
+import RegisterForm from '../user/RegisterUser';
 
 interface HomeButtonProps {
   onClick?: () => void;

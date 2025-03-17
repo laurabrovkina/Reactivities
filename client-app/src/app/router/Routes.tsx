@@ -4,8 +4,8 @@ import ActivityDashboard from '../../features/activities/dashboard/ActivityDashb
 import ActivityForm from '../../features/activities/form/ActivityForm';
 import ActivityDetails from '../../features/activities/details/ActivityDetails';
 import NotFound from '../layout/NotFound';
-import { LoginForm } from '../../features/user/LoginForm';
-import { HomePage } from '../../features/home/HomePage';
+import LoginForm from '../../features/user/LoginForm';
+import HomePage from '../../features/home/HomePage';
 
 // Wrapper component to handle form key
 const ActivityFormWrapper = () => <ActivityForm />;

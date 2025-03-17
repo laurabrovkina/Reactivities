@@ -1,23 +1,23 @@
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Container } from 'semantic-ui-react';
 import { observer } from 'mobx-react-lite';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import NavBar from '../../features/nav/NavBar';
 import ActivityDashboard from '../../features/activities/dashboard/ActivityDashboard';
-import { HomePage } from '../../features/home/HomePage';
+import HomePage from '../../features/home/HomePage';
 import ActivityForm from '../../features/activities/form/ActivityForm';
 import ActivityDetails from '../../features/activities/details/ActivityDetails';
 import NotFound from './NotFound';
-import { LoginForm } from '../../features/user/LoginForm';
-import { RootStoreContext } from '../stores/rootStore';
+import LoginForm from '../../features/user/LoginForm';
+import { useStore } from '../stores/store';
 import { LoadingComponent } from './LoadingComponent';
 import ModalContainer from '../common/modals/ModalContainer';
 
 const App = observer(() => {
   const location = useLocation();
-  const rootStore = useContext(RootStoreContext);
-  const { setAppLoaded, token, appLoaded } = rootStore.commonStore;
-  const { loadUser } = rootStore.userStore;
+  const { commonStore, userStore } = useStore();
+  const { setAppLoaded, token, appLoaded } = commonStore;
+  const { loadUser } = userStore;
 
   useEffect(() => {
     if (token) {
