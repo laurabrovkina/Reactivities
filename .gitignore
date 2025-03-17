@@ -4,3 +4,15 @@ obj
 appsettings.json
 *.db
 .qodo
+
+node_modules/revalidate/src/validators/
+
+node_modules/\@babel/runtime/helpers/
+
+node_modules/lodash/
+
+node_modules/revalidate/src/internal/
+
+node_modules/.bin/
+
+node_modules/

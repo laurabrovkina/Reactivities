@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "@types/uuid": "^10.0.0",
+    "react-final-form": "^6.5.9",
+    "revalidate": "^1.2.0"
+  }
+}
